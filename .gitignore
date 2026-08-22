@@ -1,0 +1,10 @@
+# Dependencies and local build output
+node_modules/
+dist/
+coverage/
+
+# Logs and editor files
+*.log
+.DS_Store
+.vscode/
+.idea/

@@ -1,0 +1,32 @@
+{
+  "name": "pi-auto-session-title",
+  "version": "0.1.0",
+  "description": "Automatically generate concise titles for Pi sessions after the first completed exchange.",
+  "type": "module",
+  "keywords": [
+    "pi-package",
+    "pi",
+    "pi-extension",
+    "session",
+    "title",
+    "automation"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/kexul/pi-auto-session-title.git"
+  },
+  "bugs": {
+    "url": "https://github.com/kexul/pi-auto-session-title/issues"
+  },
+  "homepage": "https://github.com/kexul/pi-auto-session-title#readme",
+  "peerDependencies": {
+    "@earendil-works/pi-ai": "*",
+    "@earendil-works/pi-coding-agent": "*"
+  },
+  "pi": {
+    "extensions": [
+      "./auto-session-title.ts"
+    ]
+  }
+}
