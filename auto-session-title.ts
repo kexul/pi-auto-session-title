@@ -1,4 +1,4 @@
-import { uuidv7 } from "@earendil-works/pi-ai";
+import { uuidv7, type Model } from "@earendil-works/pi-ai";
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 
 const SYSTEM_PROMPT = [
@@ -65,6 +65,28 @@ function firstTurn(entries: any[]): { user: string; assistant: string } | undefi
     return user && assistant ? { user, assistant } : undefined;
 }
 
+/** 起标题这一次最多花多少输出 token（思考也算在里面，见 withoutThinking 的说明）。 */
+const TITLE_MAX_TOKENS = 512;
+
+/**
+ * 起标题用的模型副本：把思考关掉。
+ *
+ * 为什么必须动它：thinkingLevelMap.off 配成 null 的模型（deepseek-flash、glm-5.3-flash 就是这样），
+ * 框架会整个不带 reasoning 参数，而模型默认照样思考 —— 输出上限小的时候，思考把额度吃光，
+ * 正文一个字都没有，标题就悄悄没了（不报错、不重试）。
+ * 把 off 改成 "none" 之后，框架会明确发 reasoning: { effort: "none" }：
+ *   - 支持关思考的模型（deepseek-flash）真的会关掉，快很多；
+ *   - 不支持、照旧思考的模型（glm-5.3-flash）请求照样收，靠 TITLE_MAX_TOKENS 的余量照样出标题。
+ * 其它接口（openai-completions 等）不动：那边 reasoning 参数怎么写没验过，不动最稳。
+ */
+function withoutThinking(model: Model<any>): Model<any> {
+    const thinkingLevelMap = model.thinkingLevelMap;
+    if (model.api !== "openai-responses" || !thinkingLevelMap || thinkingLevelMap.off !== null) {
+        return model;
+    }
+    return { ...model, thinkingLevelMap: { ...thinkingLevelMap, off: "none" } };
+}
+
 /**
  * Globally auto-name a session after its first completed exchange.
  * The title request uses the current Pi model directly and is not appended to the conversation.
@@ -84,7 +106,7 @@ export default function (pi: ExtensionAPI) {
         generating = true;
         try {
             const response = await ctx.modelRegistry.complete(
-                ctx.model,
+                withoutThinking(ctx.model),
                 {
                     systemPrompt: SYSTEM_PROMPT,
                     messages: [{
@@ -103,7 +125,7 @@ export default function (pi: ExtensionAPI) {
                     }],
                 },
                 {
-                    maxTokens: 64,
+                    maxTokens: TITLE_MAX_TOKENS,
                     cacheRetention: "none",
                     sessionId: uuidv7(),
                 },
